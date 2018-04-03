@@ -1,0 +1,5 @@
+$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+require "plugin_manager"
+require "plugin"
+
+require 'optparse'
