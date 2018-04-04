@@ -9,7 +9,25 @@ class Plugin
   # argument token to use instead of class name
   OPT_TOKEN = nil
 
+  # set instance variables for all arguments set with *plugin_argument*
+  #
+  # @raise [ArgumentError] if a required argument is missing, which is added with *plugin_argument*
   def initialize *options
+    missing_arguments = []
+    self.class.arguments.each do |argument|
+      if argument[:type] == :initialize
+        if options.empty? or not (options.first.kind_of? Hash and options.first[argument[:name]])
+          if argument[:optional]
+            instance_variable_set '@'+argument[:name].to_s, argument[:default]
+          else
+            missing_arguments << argument[:name].to_s
+          end
+        else
+          instance_variable_set '@'+argument[:name].to_s, options.first[argument[:name]]
+        end
+      end
+    end
+    raise ArgumentError.new('missing keywords: ' + missing_arguments.join(', ')) unless missing_arguments.empty?
   end
 
   # add class *name* to plugin manager
@@ -28,29 +46,41 @@ class Plugin
     @pm.add_to_group self, group: group
   end
 
+  # add plugin argument to initialize
+  #
+  # @param argument [String] argument name
+  # @param default [Object] default value for argument, optional must be true
+  # @param optional [Bool] argument is optional
+  # @param argument_settings [Hash] settings for argument
+  def self.plugin_argument argument, default: nil, optional: false, argument_settings: {}
+    result = add_command_line_parameter argument, type: :initialize, argument_settings: argument_settings
+    result[:default]  = default
+    result[:optional] = optional
+  end
+
   # add command line parameter
   #
-  # @param var_name [String] name of command line parameter
-  # @param inner [Bool] is an inner paramater
+  # @param argument [String] name of command line parameter
+  # @param type [Symbol] type of argument
   # @param argument_settings [Hash] settings for argument
-  def self.add_command_line_parameter var_name, inner: false, argument_settings: {}
-    if inner
-      @inner_arguments ||= []
-      @inner_arguments << [var_name, argument_settings]
-    else
-      @arguments ||= []
-      @arguments << [var_name, argument_settings]
-    end
+  def self.add_command_line_parameter argument, type: :all, argument_settings: {}
+    @arguments ||= []
+    argument = {name: argument, type: type, settings: argument_settings}
+    @arguments << argument
+    argument
   end
 
   # return list of arguments
   #
-  # @param add [Bool] :add add public arguments
-  # @param inner [Bool] :inner add inner arguments
-  def self.arguments add: false, inner: false
+  # @param types [Array] types to return
+  # @return [Array] arguments
+  def self.arguments types: [:all]
     result = []
-    result += @arguments        if @arguments and (add or not inner)
-    result += @inner_arguments  if @inner_arguments and inner
+    @arguments.each do |argument|
+      if types.include? :all or types.include? argument[:type]
+        result << argument
+      end
+    end
     result
   end
 end

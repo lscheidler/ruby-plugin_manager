@@ -72,8 +72,8 @@ class PluginManager
       plugin_name = ( @scope ) ? plugin_name.sub(@scope + '::', '') : plugin_name
       opt_token = ( plugin::OPT_TOKEN ) ? plugin::OPT_TOKEN : plugin_name
 
-      plugin.arguments(add: true, inner: true).each do |arg_name, options|
-        add_argument result, opt_parser, opt_token, plugin_name, arg_name, options
+      plugin.arguments.each do |argument|
+        add_argument result, opt_parser, opt_token, plugin_name, argument[:name], argument[:settings]
       end
     end
     result
