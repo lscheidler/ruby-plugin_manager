@@ -78,20 +78,20 @@ class PluginManager
   # @yield apply block to each plugin
   # @raise [PluginManager::GroupNotFoundException]
   def each group: nil, instance: false
-    if group.nil?
-      @plugins.each do |plugin_name, plugin|
-        if not instance
-          yield plugin
-        else
-          yield @plugin_instances[plugin_name]
-        end
-      end
+    arr = if group.nil?
+      @plugins
     elsif @groups.has_key? group.to_sym
-      @groups[group.to_sym].each do |plugin_name, plugin|
-        yield plugin
-      end
+      @groups[group.to_sym]
     else
       raise GroupNotFoundException.new group
+    end
+
+    arr.each do |plugin_name, plugin|
+      if not instance
+        yield plugin
+      else
+        yield @plugin_instances[plugin_name]
+      end
     end
   end
 
