@@ -13,7 +13,21 @@ class PluginManager
 
   def initialize
     @plugins = {}
+    @plugin_instances = {}
     @groups  = {}
+  end
+
+  # initialize plugins, where options are avaible or not required
+  #
+  # @param options [Hash] hash with options, where plugin_name is the key
+  def initialize_plugins options={}
+    @plugins.each do |plugin_name, klass|
+      if options[plugin_name].kind_of? Hash
+        @plugin_instances[plugin_name] = klass.new options[plugin_name]
+      elsif not klass.arguments_required?
+        @plugin_instances[plugin_name] = klass.new
+      end
+    end
   end
 
   # append plugin to manager
@@ -42,6 +56,18 @@ class PluginManager
       @plugins[@scope + '::' + plugin]
     else
       @plugins[plugin]
+    end
+  end
+
+  # return plugin instance from plugin manager
+  #
+  # @param plugin [String] name of plugin without scope
+  # @return [Plugin] plugin instance
+  def instance plugin
+    if @scope
+      @plugin_instances[@scope + '::' + plugin]
+    else
+      @plugin_instances[plugin]
     end
   end
 

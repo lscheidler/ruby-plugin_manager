@@ -117,4 +117,28 @@ describe PluginManager do
       expect(plugin.argument5).to eq('123')
     end
   end
+
+  describe 'PluginInitialize' do
+    before(:all) do
+      class PluginInitialize < Plugin
+        attr_reader :argument1, :argument3
+
+        plugin_group 'mytestgroup'
+
+        plugin_argument :argument1
+        plugin_argument :argument3, optional: true
+      end
+    end
+
+    it 'should not initialize plugin because of missing argument' do
+      @pm.initialize_plugins
+      expect(@pm.instance 'PluginInitialize').to be(nil)
+    end
+
+    it 'should initialize plugin because of existing argument' do
+      @pm.initialize_plugins({'PluginInitialize' => {argument1: 'asdf'}})
+      expect(@pm.instance 'PluginInitialize').not_to be(nil)
+      expect(@pm.instance('PluginInitialize').argument1).to eq('asdf')
+    end
+  end
 end

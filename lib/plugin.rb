@@ -83,4 +83,16 @@ class Plugin
     end
     result
   end
+
+  # @return if arguments are required to initialize plugin
+  def self.arguments_required?
+    result = false
+    @arguments.each do |argument|
+      if argument[:type] == :initialize and argument[:optional] == false
+        result = true
+        break
+      end
+    end
+    result
+  end
 end

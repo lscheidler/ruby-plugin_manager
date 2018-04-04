@@ -128,6 +128,22 @@ class MyPlugin < Plugin
 end
 ```
 
+### Plugin initialisation
+
+application.rb:
+
+```ruby
+    @pm = PluginManager.instance
+
+    @pm.initialize_plugins({'MyPlugin' => {argument1: 'asdf'}})
+
+    $ returns instance of MyPlugin
+    @pm.instance('MyPlugin')
+
+    # returns 'asdf'
+    @pm.instance('MyPlugin').argument1
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/lscheidler/ruby-plugin\_manager.
