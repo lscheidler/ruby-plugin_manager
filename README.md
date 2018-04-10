@@ -1,5 +1,7 @@
 # PluginManager
 
+[![Build Status](https://travis-ci.org/lscheidler/ruby-plugin_manager.svg?branch=master)](https://travis-ci.org/lscheidler/ruby-plugin_manager)
+
 Simple plugin manager
 
 ## Installation
@@ -146,7 +148,7 @@ application.rb:
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/lscheidler/ruby-plugin\_manager.
+Bug reports and pull requests are welcome on GitHub at https://github.com/lscheidler/ruby-plugin_manager.
 
 
 ## License
