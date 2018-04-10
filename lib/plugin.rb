@@ -16,7 +16,7 @@ class Plugin
     missing_arguments = []
     self.class.arguments.each do |argument|
       if argument[:type] == :initialize
-        if options.empty? or not (options.first.kind_of? Hash and options.first[argument[:name]])
+        if options.empty? or not (options.first.kind_of? Hash and not options.first[argument[:name]].nil?)
           if argument[:optional]
             instance_variable_set '@'+argument[:name].to_s, argument[:default]
           else
@@ -36,6 +36,13 @@ class Plugin
   def self.inherited name
     @pm = PluginManager.instance
     @pm << name
+
+    # add plugin_argument from superclass to class (MyPluginClass < MyPluginSuperClass < Plugin)
+    if @arguments
+      @arguments.each do |arg|
+        name.plugin_argument arg[:name], optional: arg[:optional], default: arg[:default], argument_settings: arg[:settings]
+      end
+    end
   end
 
   # add plugin to group
@@ -76,7 +83,7 @@ class Plugin
   # @return [Array] arguments
   def self.arguments types: [:all]
     result = []
-    @arguments.each do |argument|
+    @arguments and @arguments.each do |argument|
       if types.include? :all or types.include? argument[:type]
         result << argument
       end
@@ -87,7 +94,7 @@ class Plugin
   # @return if arguments are required to initialize plugin
   def self.arguments_required?
     result = false
-    @arguments.each do |argument|
+    @arguments and @arguments.each do |argument|
       if argument[:type] == :initialize and argument[:optional] == false
         result = true
         break

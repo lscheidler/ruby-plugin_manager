@@ -20,12 +20,20 @@ class PluginManager
   # initialize plugins, where options are avaible or not required
   #
   # @param options [Hash] hash with options, where plugin_name is the key
-  def initialize_plugins options={}
+  def initialize_plugins options={}, defaults: {}
     @plugins.each do |plugin_name, klass|
       if options[plugin_name].kind_of? Hash
-        @plugin_instances[plugin_name] = klass.new options[plugin_name]
-      elsif not klass.arguments_required?
-        @plugin_instances[plugin_name] = klass.new
+        begin
+          @plugin_instances[plugin_name] = klass.new(defaults.merge(options[plugin_name]))
+        rescue ArgumentError => exc
+          #warn exc.message
+        end
+      else
+        begin
+          @plugin_instances[plugin_name] = klass.new(defaults)
+        rescue ArgumentError => exc
+          #warn exc.message
+        end
       end
     end
   end
@@ -71,13 +79,12 @@ class PluginManager
     end
   end
 
-  # iterate over all plugins
+  # iterate over all plugins or plugin group
   #
   # @param group [String] plugin group
-  # @param instance [Bool] return plugin instance
-  # @yield apply block to each plugin
+  # @yield [klass, instance] apply block to each plugin
   # @raise [PluginManager::GroupNotFoundException]
-  def each group: nil, instance: false
+  def each group: nil
     arr = if group.nil?
       @plugins
     elsif @groups.has_key? group.to_sym
@@ -87,11 +94,7 @@ class PluginManager
     end
 
     arr.each do |plugin_name, plugin|
-      if not instance
-        yield plugin
-      else
-        yield @plugin_instances[plugin_name]
-      end
+      yield plugin, @plugin_instances[plugin_name]
     end
   end
 
