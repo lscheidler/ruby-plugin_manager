@@ -11,6 +11,10 @@ class PluginManager
   #   @return [String] module scope of plugins
   attr_accessor :scope
 
+  # @!attribute [rw] log
+  #   @return [Logger] logger
+  attr_accessor :log
+
   def initialize
     @plugins = {}
     @plugin_instances = {}
@@ -22,17 +26,20 @@ class PluginManager
   # @param options [Hash] hash with options, where plugin_name is the key
   def initialize_plugins options={}, defaults: {}
     @plugins.each do |plugin_name, klass|
+      next if not klass.plugin_settings(:skip_auto_initialization).nil? and klass.plugin_settings(:skip_auto_initialization)
+      next if not klass.plugin_settings(:disabled).nil? and klass.plugin_settings(:disabled)
+
       if options[plugin_name].kind_of? Hash
         begin
           @plugin_instances[plugin_name] = klass.new(defaults.merge(options[plugin_name]))
         rescue ArgumentError => exc
-          #warn exc.message
+          @log and @log.debug exc.message
         end
       else
         begin
           @plugin_instances[plugin_name] = klass.new(defaults)
         rescue ArgumentError => exc
-          #warn exc.message
+          @log and @log.debug exc.message
         end
       end
     end
@@ -94,6 +101,8 @@ class PluginManager
     end
 
     arr.each do |plugin_name, plugin|
+      next if plugin.plugin_settings(:disabled)
+
       yield plugin, @plugin_instances[plugin_name]
     end
   end

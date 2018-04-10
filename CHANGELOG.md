@@ -1,3 +1,12 @@
+0.1.3
+=====
+
+- introduce plugin\_setting, which sets settings for plugin, which are
+  respected by PluginManager
+  - :skip\_auto\_initialization: skip initialization in
+    PluginManager.initialize\_plugins for this plugin
+  - :disabled: disable plugin for initialisation and PluginManager.each
+
 0.1.2
 =====
 

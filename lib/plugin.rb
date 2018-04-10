@@ -43,6 +43,12 @@ class Plugin
         name.plugin_argument arg[:name], optional: arg[:optional], default: arg[:default], argument_settings: arg[:settings]
       end
     end
+
+    if @plugin_settings
+      @plugin_settings.each do |key, value|
+        name.plugin_setting key, value
+      end
+    end
   end
 
   # add plugin to group
@@ -63,6 +69,27 @@ class Plugin
     result = add_command_line_parameter argument, type: :initialize, argument_settings: argument_settings
     result[:default]  = default
     result[:optional] = optional
+  end
+
+  # set plugin setting, which are respected by PluginManager
+  #
+  # @param setting [String] name of setting
+  # @param value [Object] value of setting
+  def self.plugin_setting setting, value
+    @plugin_settings ||= {}
+    @plugin_settings[setting.to_sym] = value
+  end
+
+  # get plugin setting
+  #
+  # @param setting [String] name of setting
+  # @return [Object] value of setting
+  def self.plugin_settings setting
+    result = nil
+    if not @plugin_settings.nil?
+      result = @plugin_settings[setting.to_sym]
+    end
+    result
   end
 
   # add command line parameter

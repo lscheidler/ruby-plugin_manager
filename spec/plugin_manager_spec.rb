@@ -141,4 +141,48 @@ describe PluginManager do
       expect(@pm.instance('PluginInitialize').argument1).to eq('asdf')
     end
   end
+
+  describe 'PluginNoAutoInitialize' do
+    before(:all) do
+      class PluginNoAutoInitialize < Plugin
+        attr_reader :argument1, :argument3
+
+        plugin_group 'mytestgroup'
+        plugin_setting :skip_auto_initialization, true
+
+        plugin_argument :argument1
+        plugin_argument :argument3, optional: true
+      end
+    end
+
+    it 'should not initialize plugin because of plugin_setting :skip_auto_initialization' do
+      @pm.initialize_plugins({'PluginNoAutoInitialize' => {argument1: 'asdf'}})
+      expect(@pm.instance 'PluginNoAutoInitialize').to be(nil)
+    end
+  end
+
+  describe 'DisabledPlugin' do
+    before(:all) do
+      class DisabledPlugin< Plugin
+        attr_reader :argument1, :argument3
+
+        plugin_group 'mytestgroup'
+        plugin_setting :disabled, true
+
+        plugin_argument :argument1
+        plugin_argument :argument3, optional: true
+      end
+    end
+
+    it 'should not initialize plugin because of plugin_setting :disabled' do
+      @pm.initialize_plugins({'DisabledPlugin' => {argument1: 'asdf'}})
+      expect(@pm.instance 'DisabledPlugin').to be(nil)
+    end
+
+    it 'should not show up in each because of plugin_setting :disabled' do
+      @pm.each do |plugin_klass, plugin_instance|
+        expect(plugin_klass).not_to be(DisabledPlugin)
+      end
+    end
+  end
 end

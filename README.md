@@ -146,6 +146,22 @@ application.rb:
     @pm.instance('MyPlugin').argument1
 ```
 
+### Plugin settings
+
+Plugin settings, which are respected by PluginManager
+
+my\_plugin.rb:
+
+```ruby
+class MyPlugin < Plugin
+  # skip initialisation in PluginManager.initialize_plugins for this plugin
+  plugin_setting :skip_auto_initialization, true
+
+  # disable plugin for initialisation and PluginManager.each
+  plugin_setting :disabled, true
+end
+```
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/lscheidler/ruby-plugin_manager.
