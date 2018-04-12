@@ -16,7 +16,7 @@ class Plugin
     missing_arguments = []
     self.class.arguments.each do |argument|
       if argument[:type] == :initialize
-        if options.empty? or not (options.first.kind_of? Hash and not options.first[argument[:name]].nil?)
+        if options.empty? or options.first.nil? or not (options.first.class.method_defined? :[] and options.first.class.method_defined? :has_key? and options.first.has_key? argument[:name])
           if argument[:optional]
             instance_variable_set '@'+argument[:name].to_s, argument[:default]
           else

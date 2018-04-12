@@ -1,3 +1,9 @@
+0.1.4
+=====
+
+- plugin argument initialisation now supports all kind of class instances,
+  which support [] and has\_key? methods (e.g. Hash)
+
 0.1.3
 =====
 

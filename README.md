@@ -9,16 +9,12 @@ Simple plugin manager
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'plugin_manager'
+gem 'plugin_manager', git: 'https://github.com/lscheidler/ruby-plugin_manager'
 ```
 
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install plugin_manager
 
 ## Usage
 
@@ -27,6 +23,7 @@ Or install it yourself as:
 application.rb:
 
 ```ruby
+require 'bundler/setup'
 require 'plugin_manager'
 require_relative 'my_plugin'
 
@@ -44,6 +41,7 @@ end
 my\_plugin.rb:
 
 ```ruby
+require 'bundler/setup'
 require 'plugin'
 
 class MyPlugin < Plugin
@@ -63,6 +61,7 @@ application.rb:
 my\_plugin.rb:
 
 ```ruby
+require 'bundler/setup'
 require 'plugin'
 
 class MyPlugin < Plugin
@@ -93,6 +92,7 @@ end
 application.rb:
 
 ```ruby
+require 'bundler/setup'
 require 'plugin_manager'
 require_relative 'my_plugin'
 
@@ -114,6 +114,7 @@ end
 my\_plugin.rb:
 
 ```ruby
+require 'bundler/setup'
 require 'plugin'
 
 class MyPlugin < Plugin
