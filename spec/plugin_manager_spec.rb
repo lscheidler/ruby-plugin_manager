@@ -185,4 +185,28 @@ describe PluginManager do
       end
     end
   end
+
+  describe 'PluginArgumentValidation' do
+    before(:all) do
+      class PluginArgumentValidation < Plugin
+        attr_reader :argument1, :argument2
+
+        plugin_group 'mytestgroup'
+
+        plugin_argument :argument1, validator: Proc.new {|x| not x.nil? and not x.empty?}
+        plugin_argument :argument2, validator: Proc.new {|x| not x.nil? and x.is_a? Integer}
+      end
+    end
+
+    it 'should raise an exception, because arguments are not valid' do
+      expect {@pm['PluginArgumentValidation'].new argument1: ""}.to raise_error(ArgumentError, 'missing keywords: argument1, argument2')
+    end
+
+    it 'should initialize the plugin' do
+      plugin=@pm['PluginArgumentValidation'].new argument1: "abc", argument2: 2
+      expect(plugin).not_to be(nil)
+      expect(plugin.argument1).to eq("abc")
+      expect(plugin.argument2).to be(2)
+    end
+  end
 end

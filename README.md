@@ -128,6 +128,9 @@ class MyPlugin < Plugin
 
   # optional argument3 with default
   plugin_argument :argument3, optional: true, default: 'Hello World'
+
+  # argument4 with validator
+  plugin_argument :argument4, validator: Proc.new {|x| not x.nil? and not x.empty?}
 end
 ```
 

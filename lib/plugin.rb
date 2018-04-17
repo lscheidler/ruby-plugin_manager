@@ -13,10 +13,13 @@ class Plugin
   #
   # @raise [ArgumentError] if a required argument is missing, which is added with *plugin_argument*
   def initialize *options
+    options_empty = (options.empty? or options.first.nil?) ? true : false
+    options_unsupported = (not options_empty and options.first.class.method_defined? :[] and options.first.class.method_defined? :has_key?) ? false : true
+
     missing_arguments = []
     self.class.arguments.each do |argument|
       if argument[:type] == :initialize
-        if options.empty? or options.first.nil? or not (options.first.class.method_defined? :[] and options.first.class.method_defined? :has_key? and options.first.has_key? argument[:name])
+        if options_empty or options_unsupported or not is_argument_valid?(options.first, argument)
           if argument[:optional]
             instance_variable_set '@'+argument[:name].to_s, argument[:default]
           else
@@ -40,7 +43,7 @@ class Plugin
     # add plugin_argument from superclass to class (MyPluginClass < MyPluginSuperClass < Plugin)
     if @arguments
       @arguments.each do |arg|
-        name.plugin_argument arg[:name], optional: arg[:optional], default: arg[:default], argument_settings: arg[:settings]
+        name.plugin_argument arg[:name], optional: arg[:optional], default: arg[:default], argument_settings: arg[:settings], validator: arg[:validator]
       end
     end
 
@@ -65,10 +68,12 @@ class Plugin
   # @param default [Object] default value for argument, optional must be true
   # @param optional [Bool] argument is optional
   # @param argument_settings [Hash] settings for argument
-  def self.plugin_argument argument, default: nil, optional: false, argument_settings: {}
+  # @param validator [Proc] validator
+  def self.plugin_argument argument, default: nil, optional: false, argument_settings: {}, validator: nil
     result = add_command_line_parameter argument, type: :initialize, argument_settings: argument_settings
     result[:default]  = default
     result[:optional] = optional
+    result[:validator] = validator
   end
 
   # set plugin setting, which are respected by PluginManager
@@ -127,6 +132,19 @@ class Plugin
         break
       end
     end
+    result
+  end
+
+  private
+
+  # check, if argument key exist and value is valid
+  #
+  # @param options [Hash] map with options
+  # @param argument [Hash] argument settings
+  # @return if argument key exist and value is valid
+  def is_argument_valid? options, argument
+    result = options.has_key? argument[:name]
+    result = (result and argument[:validator].yield(options[argument[:name]])) unless argument[:validator].nil?
     result
   end
 end

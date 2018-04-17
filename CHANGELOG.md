@@ -1,3 +1,8 @@
+0.1.5
+=====
+
+- introduce validator to plugin\_argument, which validates passed argument against Proc
+
 0.1.4
 =====
 
