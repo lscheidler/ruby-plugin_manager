@@ -1,4 +1,17 @@
-# @author Lars Eric Scheidler <lscheidler@liventy.de>
+# Copyright 2018 Lars Eric Scheidler
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 require_relative 'plugin_manager'
 
 # plugin object
@@ -31,6 +44,12 @@ class Plugin
       end
     end
     raise ArgumentError.new('missing keywords: ' + missing_arguments.join(', ')) unless missing_arguments.empty?
+
+    after_initialize
+  end
+
+  # run code after plugin initialization
+  def after_initialize
   end
 
   # add class *name* to plugin manager

@@ -118,7 +118,7 @@ require 'bundler/setup'
 require 'plugin'
 
 class MyPlugin < Plugin
-  attr_accessor :argument1
+  attr_accessor :argument1, :argument4
 
   # required argument1
   plugin_argument :argument1
@@ -141,13 +141,29 @@ application.rb:
 ```ruby
     @pm = PluginManager.instance
 
-    @pm.initialize_plugins({'MyPlugin' => {argument1: 'asdf'}})
+    @pm.initialize_plugins({'MyPlugin' => {argument1: 'asdf'}}, defaults: {argument4: '1234'})
 
     $ returns instance of MyPlugin
     @pm.instance('MyPlugin')
 
-    # returns 'asdf'
+    # returns 'asdfasdfasdf'
     @pm.instance('MyPlugin').argument1
+
+    # returns '1234'
+    @pm.instance('MyPlugin').argument4
+```
+
+my\_plugin.rb:
+
+```ruby
+class MyPlugin < Plugin
+  ...
+
+  # run code directly after MyPlugin.initialize
+  def after_initialize
+    @argument1 = @argument1*3
+  end
+end
 ```
 
 ### Plugin settings
@@ -173,5 +189,5 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/lschei
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
+The gem is available as open source under the terms of the [Apache 2.0 License](http://opensource.org/licenses/Apache-2.0).
 

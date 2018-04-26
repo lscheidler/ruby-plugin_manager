@@ -1,3 +1,17 @@
+# Copyright 2018 Lars Eric Scheidler
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 require "spec_helper"
 
 describe PluginManager do
@@ -19,9 +33,18 @@ describe PluginManager do
         plugin_group 'mytestgroup'
 
         add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+
+        def after_initialize
+          puts 'after_initialize'
+        end
       end
 
       @options = OptionParser.new
+    end
+
+    after(:all) do
+      # disable plugin to circumvent unwanted output in @pm.initialize_plugins
+      @pm['TestPlugin'].plugin_setting :disabled, true
     end
 
     it "has a version number" do
@@ -45,6 +68,10 @@ describe PluginManager do
     it 'should extend OptionParser' do
       @pm.extend_option_parser @options
       expect(@options.summarize).to include(/--TestPlugin-name STRING/)
+    end
+
+    it 'should run method after_initialize' do
+      expect{@pm['TestPlugin'].new}.to output("after_initialize\n").to_stdout
     end
   end
 
@@ -121,12 +148,17 @@ describe PluginManager do
   describe 'PluginInitialize' do
     before(:all) do
       class PluginInitialize < Plugin
-        attr_reader :argument1, :argument3
+        attr_reader :argument1, :argument3, :argument4
 
         plugin_group 'mytestgroup'
 
         plugin_argument :argument1
         plugin_argument :argument3, optional: true
+        plugin_argument :argument4
+
+        def after_initialize
+          @argument1 = @argument1*3
+        end
       end
     end
 
@@ -136,9 +168,10 @@ describe PluginManager do
     end
 
     it 'should initialize plugin because of existing argument' do
-      @pm.initialize_plugins({'PluginInitialize' => {argument1: 'asdf'}})
+      @pm.initialize_plugins({'PluginInitialize' => {argument1: 'asdf'}}, defaults: {argument4: '1234'})
       expect(@pm.instance 'PluginInitialize').not_to be(nil)
-      expect(@pm.instance('PluginInitialize').argument1).to eq('asdf')
+      expect(@pm.instance('PluginInitialize').argument1).to eq('asdfasdfasdf')
+      expect(@pm.instance('PluginInitialize').argument4).to eq('1234')
     end
   end
 
