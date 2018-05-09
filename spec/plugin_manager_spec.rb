@@ -102,9 +102,9 @@ describe PluginManager do
         plugin_group 'mytestgroup'
 
         plugin_argument :argument1
-        plugin_argument :argument2, argument_settings: {type: String, description: 'description for argument2 parameter'}
+        plugin_argument :argument2, description: 'bla', argument_settings: {type: String, description: 'description for argument2 parameter'}
         plugin_argument :argument3, optional: true
-        plugin_argument :argument4, optional: true, default: true, argument_settings: {type: TrueClass, description: 'description for argument4 parameter'}
+        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', argument_settings: {type: TrueClass}
         plugin_argument :argument5, optional: true, default: '123'
 
         add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
@@ -118,8 +118,11 @@ describe PluginManager do
       expect(@options.summarize).to include(/--PluginWithArguments-name STRING/)
       expect(@options.summarize).to include(/--PluginWithArguments-argument1 STRING/)
       expect(@options.summarize).to include(/--PluginWithArguments-argument2 STRING/)
+      expect(@options.summarize).to include(/description for argument2 parameter/)
+      expect(@options.summarize).not_to include(/bla/)
       expect(@options.summarize).to include(/--PluginWithArguments-argument3 STRING/)
-      expect(@options.summarize).to include(/--\[no-\]PluginWithArguments-argument4/)
+      expect(@options.summarize).to include(/--\[no-\]PluginWithArguments-argument4.*/)
+      expect(@options.summarize).to include(/description for argument4 parameter/)
       expect(@options.summarize).to include(/--PluginWithArguments-argument5 STRING/)
     end
 

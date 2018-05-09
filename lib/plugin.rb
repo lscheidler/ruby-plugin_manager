@@ -85,10 +85,13 @@ class Plugin
   #
   # @param argument [String] argument name
   # @param default [Object] default value for argument, optional must be true
+  # @param description [String] argument description
   # @param optional [Bool] argument is optional
   # @param argument_settings [Hash] settings for argument
   # @param validator [Proc] validator
-  def self.plugin_argument argument, default: nil, optional: false, argument_settings: {}, validator: nil
+  def self.plugin_argument argument, default: nil, description: nil, optional: false, argument_settings: {}, validator: nil
+    argument_settings[:description] = description unless description.nil? or argument_settings.has_key? :description
+
     result = add_command_line_parameter argument, type: :initialize, argument_settings: argument_settings
     result[:default]  = default
     result[:optional] = optional

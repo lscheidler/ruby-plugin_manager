@@ -131,6 +131,9 @@ class MyPlugin < Plugin
 
   # argument4 with validator
   plugin_argument :argument4, validator: Proc.new {|x| not x.nil? and not x.empty?}
+
+  # optional argument5, with argument settings for OptionParser
+  plugin_argument :argument5, description: 'description for argument5 parameter', optional: true, argument_settings: {type: String}
 end
 ```
 
