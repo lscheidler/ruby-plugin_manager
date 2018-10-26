@@ -88,11 +88,12 @@ class Plugin
   # @param description [String] argument description
   # @param optional [Bool] argument is optional
   # @param argument_settings [Hash] settings for argument
+  # @param type [Symbol] argument type
   # @param validator [Proc] validator
-  def self.plugin_argument argument, default: nil, description: nil, optional: false, argument_settings: {}, validator: nil
+  def self.plugin_argument argument, default: nil, description: nil, optional: false, argument_settings: {}, type: :initialize, validator: nil
     argument_settings[:description] = description unless description.nil? or argument_settings.has_key? :description
 
-    result = add_command_line_parameter argument, type: :initialize, argument_settings: argument_settings
+    result = add_command_line_parameter argument, type: type, argument_settings: argument_settings
     result[:default]  = default
     result[:optional] = optional
     result[:validator] = validator
@@ -135,10 +136,10 @@ class Plugin
   #
   # @param types [Array] types to return
   # @return [Array] arguments
-  def self.arguments types: [:all]
+  def self.arguments types: nil
     result = []
     @arguments and @arguments.each do |argument|
-      if types.include? :all or types.include? argument[:type]
+      if types.nil? or types.include? :all or types.include? argument[:type]
         result << argument
       end
     end

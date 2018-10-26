@@ -124,15 +124,19 @@ class PluginManager
   # extend option parser object with arguments from plugins
   #
   # @param opt_parser [OptionParser] option parser object to extend
+  # @param types [Array] argument types to extend option parser with
   # @return [Hash] passed command line arguments with provided values
-  def extend_option_parser opt_parser
+  def extend_option_parser opt_parser, types: nil
     result = {}
     @plugins.each do |plugin_name, plugin|
       plugin_name = ( @scope ) ? plugin_name.sub(@scope + '::', '') : plugin_name
       opt_token = ( plugin::OPT_TOKEN ) ? plugin::OPT_TOKEN : plugin_name
 
-      plugin.arguments.each do |argument|
-        add_argument result, opt_parser, opt_token, plugin_name, argument[:name], argument[:settings]
+      plugin.arguments(types: types).each do |argument|
+        settings = ( argument[:settings].nil? ) ? {} : argument[:settings]
+        settings[:default] = argument[:default]
+
+        add_argument result, opt_parser, opt_token, plugin_name, argument[:name], settings
       end
     end
     result
@@ -147,20 +151,22 @@ class PluginManager
   # @param arg_name [String] argument name
   # @param type [Class] type of argument [String, Array, Bool]
   # @param description [String] description of command line argument
-  def add_argument result, opt_parser, opt_token, plugin_name, arg_name, type: nil, description: ' '
+  def add_argument result, opt_parser, opt_token, plugin_name, arg_name, type: nil, description: ' ', default: nil
+    default = 'default: ' + default.to_s if not default.nil?
+
     if type == TrueClass or type == FalseClass
-      opt_parser.on("--[no-]#{opt_token}-#{arg_name}".gsub(/_/, '-'), description) do |val|
+      opt_parser.on("--[no-]#{opt_token}-#{arg_name}".gsub(/_/, '-'), description, default) do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] = val
       end
     elsif type == Array
-      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description) do |val|
+      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description, default) do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] ||= []
         result[plugin_name][arg_name] << val
       end
     else
-      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description) do |val|
+      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description, default) do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] = val
       end

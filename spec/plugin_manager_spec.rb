@@ -31,6 +31,7 @@ describe PluginManager do
     before(:all) do
       class TestPlugin < Plugin
         plugin_group 'mytestgroup'
+        plugin_group 'mytestgroup2'
 
         add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
 
@@ -57,6 +58,12 @@ describe PluginManager do
 
     it 'should be listed in PluginManager group' do
       groups = @pm.each(group: 'mytestgroup') {|x| x}
+
+      expect(groups).to include(TestPlugin.to_s)
+    end
+
+    it 'should be listed in second PluginManager group' do
+      groups = @pm.each(group: 'mytestgroup2') {|x| x}
 
       expect(groups).to include(TestPlugin.to_s)
     end
@@ -145,6 +152,44 @@ describe PluginManager do
       plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz'
       expect(plugin.argument4).to eq(true)
       expect(plugin.argument5).to eq('123')
+    end
+  end
+
+  describe 'PluginWithExcludedArguments' do
+    before(:all) do
+      class PluginWithExcludedArguments < Plugin
+        attr_reader :argument1, :argument2, :argument3, :argument4, :argument5
+
+        plugin_group 'mytestgroup'
+
+        plugin_argument :argument1
+        plugin_argument :argument2, description: 'bla', argument_settings: {type: String, description: 'description for argument2 parameter'}
+        plugin_argument :argument3, type: :command_line, optional: true
+        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', argument_settings: {type: TrueClass}
+        plugin_argument :argument5, type: :command_line2, optional: true, default: '123'
+
+        add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+      end
+
+      @options = OptionParser.new
+    end
+
+    it 'should extend OptionParser' do
+      @pm.extend_option_parser @options, types: [:command_line, :command_line2]
+      expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-name STRING/)
+      expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-argument1 STRING/)
+      expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-argument2 STRING/)
+      expect(@options.summarize).not_to include(/description for argument2 parameter/)
+      expect(@options.summarize).to include(/--PluginWithExcludedArguments-argument3 STRING/)
+      expect(@options.summarize).not_to include(/--\[no-\]PluginWithExcludedArguments-argument4.*/)
+      expect(@options.summarize).not_to include(/description for argument4 parameter/)
+      expect(@options.summarize).to include(/--PluginWithExcludedArguments-argument5 STRING/)
+    end
+
+    it 'shows default values' do
+      expect(@options.summarize.index{|x| x =~ /--PluginWithExcludedArguments-argument5/}).to be(2)
+      expect(@options.summarize).to include(/default: 123/)
+      expect(@options.summarize.index{|x| x =~ /default: 123/}).to be(4)
     end
   end
 

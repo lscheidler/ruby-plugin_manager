@@ -1,3 +1,9 @@
+0.1.8 (2018-10-26)
+==================
+
+- pass type through plugin\_argument to PluginManager.extend\_option\_parser
+- show default value in option parser
+
 0.1.7 (2018-05-09)
 ==================
 

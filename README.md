@@ -83,7 +83,7 @@ my\_plugin.rb:
 
 ```ruby
 class MyPlugin < Plugin
-  add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+  plugin_argument :name, description: 'description for name parameter', argument_settings: {type: String}
 end
 ```
 
@@ -134,6 +134,12 @@ class MyPlugin < Plugin
 
   # optional argument5, with argument settings for OptionParser
   plugin_argument :argument5, description: 'description for argument5 parameter', optional: true, argument_settings: {type: String}
+
+  # optional boolean argument, with argument settings for OptionParser
+  plugin_argument :boolean, description: 'description for boolean parameter', optional: true, argument_settings: {type: TrueClass}
+
+  # optional array argument, with argument settings for OptionParser
+  plugin_argument :array, description: 'description for array parameter', optional: true, argument_settings: {type: Array}
 end
 ```
 
@@ -166,6 +172,29 @@ class MyPlugin < Plugin
   def after_initialize
     @argument1 = @argument1*3
   end
+end
+```
+
+### Limit OptionParser extension to a set of arguments
+
+application.rb:
+
+```ruby
+    @options = OptionParser.new
+    @pm.extend_option_parser @options, types: [:command_line, :command_line2]
+    @options.parse!
+```
+
+my\_plugin.rb:
+
+```ruby
+class MyPlugin < Plugin
+  # show argument in OptionParser
+  plugin_argument :name, type: :command_line, description: 'description for name parameter', argument_settings: {type: String}
+  plugin_argument :other, type: :command_line2, description: 'description for other parameter', argument_settings: {type: String}
+
+  # internal argument, isn't shown in OptionParser
+  plugin_argument :internal
 end
 ```
 
