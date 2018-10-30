@@ -1,3 +1,8 @@
+0.1.9 (2018-10-30)
+==================
+
+- bugfix for parsing command line arguments correctly
+
 0.1.8 (2018-10-26)
 ==================
 

@@ -151,25 +151,37 @@ class PluginManager
   # @param arg_name [String] argument name
   # @param type [Class] type of argument [String, Array, Bool]
   # @param description [String] description of command line argument
-  def add_argument result, opt_parser, opt_token, plugin_name, arg_name, type: nil, description: ' ', default: nil
+  def add_argument result, opt_parser, opt_token, plugin_name, arg_name, type: nil, description: " ", default: nil
     default = 'default: ' + default.to_s if not default.nil?
+    arg = []
 
-    if type == TrueClass or type == FalseClass
-      opt_parser.on("--[no-]#{opt_token}-#{arg_name}".gsub(/_/, '-'), description, default) do |val|
+    block = if type == TrueClass or type == FalseClass
+      arg << "--[no-]#{opt_token}-#{arg_name}".gsub(/_/, '-')
+
+      proc do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] = val
       end
     elsif type == Array
-      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description, default) do |val|
+      arg += [ "--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String ]
+
+      proc do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] ||= []
         result[plugin_name][arg_name] << val
       end
     else
-      opt_parser.on("--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String, description, default) do |val|
+      arg += [ "--#{opt_token}-#{arg_name} STRING".gsub(/_/, '-'), String ]
+
+      proc do |val|
         result[plugin_name] ||= {}
         result[plugin_name][arg_name] = val
       end
     end
+
+    arg << description unless description.nil?
+    arg << default unless default.nil?
+
+    opt_parser.on(*arg, block)
   end
 end

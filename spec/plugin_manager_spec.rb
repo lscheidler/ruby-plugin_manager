@@ -73,8 +73,11 @@ describe PluginManager do
     end
 
     it 'should extend OptionParser' do
-      @pm.extend_option_parser @options
+      @result = @pm.extend_option_parser @options
       expect(@options.summarize).to include(/--TestPlugin-name STRING/)
+      @options.parse(['--TestPlugin-name', 'test'])
+
+      expect(@result['TestPlugin'][:name]).to eq('test')
     end
 
     it 'should run method after_initialize' do
@@ -113,6 +116,7 @@ describe PluginManager do
         plugin_argument :argument3, optional: true
         plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', argument_settings: {type: TrueClass}
         plugin_argument :argument5, optional: true, default: '123'
+        plugin_argument :argument6, optional: true, argument_settings: {type: Array}
 
         add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
       end
@@ -131,6 +135,18 @@ describe PluginManager do
       expect(@options.summarize).to include(/--\[no-\]PluginWithArguments-argument4.*/)
       expect(@options.summarize).to include(/description for argument4 parameter/)
       expect(@options.summarize).to include(/--PluginWithArguments-argument5 STRING/)
+    end
+
+    it 'parses arguments' do
+      @result = @pm.extend_option_parser @options
+      @options.parse(['--PluginWithArguments-name', 'test', '--PluginWithArguments-argument4', '--PluginWithArguments-argument6', 'hello', '--PluginWithArguments-argument6', 'world'])
+
+      expect(@result['PluginWithArguments'][:name]).to eq('test')
+      expect(@result['PluginWithArguments'][:argument4]).to be(true)
+      expect(@result['PluginWithArguments'][:argument6]).to eq(["hello", "world"])
+
+      @options.parse(['--PluginWithArguments-name', 'test', '--no-PluginWithArguments-argument4'])
+      expect(@result['PluginWithArguments'][:argument4]).to be(false)
     end
 
     it 'should require argument1 and argument2' do
