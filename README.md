@@ -83,7 +83,7 @@ my\_plugin.rb:
 
 ```ruby
 class MyPlugin < Plugin
-  plugin_argument :name, description: 'description for name parameter', argument_settings: {type: String}
+  plugin_argument :name, description: 'description for name parameter', type: String
 end
 ```
 
@@ -124,7 +124,7 @@ class MyPlugin < Plugin
   plugin_argument :argument1
 
   # optional argument2, with argument settings for OptionParser
-  plugin_argument :argument2, optional: true, argument_settings: {type: String, description: 'description for argument2 parameter'}
+  plugin_argument :argument2, optional: true, type: String, description: 'description for argument2 parameter'
 
   # optional argument3 with default
   plugin_argument :argument3, optional: true, default: 'Hello World'
@@ -133,13 +133,13 @@ class MyPlugin < Plugin
   plugin_argument :argument4, validator: Proc.new {|x| not x.nil? and not x.empty?}
 
   # optional argument5, with argument settings for OptionParser
-  plugin_argument :argument5, description: 'description for argument5 parameter', optional: true, argument_settings: {type: String}
+  plugin_argument :argument5, description: 'description for argument5 parameter', optional: true
 
   # optional boolean argument, with argument settings for OptionParser
-  plugin_argument :boolean, description: 'description for boolean parameter', optional: true, argument_settings: {type: TrueClass}
+  plugin_argument :boolean, description: 'description for boolean parameter', optional: true, type: TrueClass
 
   # optional array argument, with argument settings for OptionParser
-  plugin_argument :array, description: 'description for array parameter', optional: true, argument_settings: {type: Array}
+  plugin_argument :array, description: 'description for array parameter', optional: true, type: Array
 end
 ```
 
@@ -181,7 +181,7 @@ application.rb:
 
 ```ruby
     @options = OptionParser.new
-    @pm.extend_option_parser @options, types: [:command_line, :command_line2]
+    @pm.extend_option_parser @options, argument_groups: [:command_line, :command_line2]
     @options.parse!
 ```
 
@@ -190,8 +190,8 @@ my\_plugin.rb:
 ```ruby
 class MyPlugin < Plugin
   # show argument in OptionParser
-  plugin_argument :name, type: :command_line, description: 'description for name parameter', argument_settings: {type: String}
-  plugin_argument :other, type: :command_line2, description: 'description for other parameter', argument_settings: {type: String}
+  plugin_argument :name, group: :command_line, description: 'description for name parameter'
+  plugin_argument :other, group: :command_line2, description: 'description for other parameter'
 
   # internal argument, isn't shown in OptionParser
   plugin_argument :internal
@@ -213,6 +213,36 @@ class MyPlugin < Plugin
   plugin_setting :disabled, true
 end
 ```
+
+### Plugin argument initialization
+
+This can be used to pass arguments from option parser to commands used in a Plugin
+
+```ruby
+class MyPlugin < Plugin
+  def initialize_argument argument, options, options_empty: true, options_unsupported: true
+    super
+
+    @command_line_arguments ||= []
+    case argument[:group]
+    when :command_line
+      if not is_argument_valid?(argument, :value, argument[:validator])
+        if not argument[:optional]
+          raise ArgumentError.new
+        end
+      else
+        if argument[:simple]
+          @command_line_arguments += [ '--'+argument[:name].to_s ]
+        else
+          @command_line_arguments += [ '--'+argument[:name].to_s, argument[:value]]
+        end
+      end
+    end
+  end
+end
+```
+
+See also [example](examples/plugin_argument_initialization.rb)
 
 ## Contributing
 

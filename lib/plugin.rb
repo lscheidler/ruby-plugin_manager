@@ -31,21 +31,37 @@ class Plugin
 
     missing_arguments = []
     self.class.arguments.each do |argument|
-      if argument[:type] == :initialize
-        if options_empty or options_unsupported or not is_argument_valid?(options.first, argument)
-          if argument[:optional]
-            instance_variable_set '@'+argument[:name].to_s, argument[:default]
-          else
-            missing_arguments << argument[:name].to_s
-          end
-        else
-          instance_variable_set '@'+argument[:name].to_s, options.first[argument[:name]]
-        end
+      begin
+        initialize_argument argument, options, options_empty: options_empty, options_unsupported: options_unsupported
+      rescue ArgumentError
+        missing_arguments << argument[:name].to_s
       end
     end
     raise ArgumentError.new('missing keywords: ' + missing_arguments.join(', ')) unless missing_arguments.empty?
 
     after_initialize
+  end
+
+  # check and initialize plugin argument
+  #
+  # @param argument [Hash] argument
+  # @param options [Hash] options
+  # @param options_empty [Bool] options is empty
+  # @param options_unsupported [Bool] options is unsupported
+  def initialize_argument argument, options, options_empty: true, options_unsupported: true
+    if options_empty or options_unsupported or (not is_argument_valid?(options.first, argument[:name], argument[:validator]) and not is_argument_valid?(argument, :value, argument[:validator]))
+      if argument[:optional]
+        instance_variable_set '@'+argument[:name].to_s, argument[:default]
+      else
+        raise ArgumentError.new
+      end
+    else
+      if is_argument_valid?(argument, :value, argument[:validator])
+        instance_variable_set '@'+argument[:name].to_s, argument[:value]
+      else
+        instance_variable_set '@'+argument[:name].to_s, options.first[argument[:name]]
+      end
+    end
   end
 
   # run code after plugin initialization
@@ -56,13 +72,20 @@ class Plugin
   #
   # @param name [Class] class
   def self.inherited name
-    @pm = PluginManager.instance
-    @pm << name
+    pm = PluginManager.instance
+    pm << name
 
     # add plugin_argument from superclass to class (MyPluginClass < MyPluginSuperClass < Plugin)
     if @arguments
       @arguments.each do |arg|
-        name.plugin_argument arg[:name], optional: arg[:optional], default: arg[:default], argument_settings: arg[:settings], validator: arg[:validator]
+        name.plugin_argument arg[:name],
+          default: arg[:default],
+          description: arg[:description],
+          group: arg[:group],
+          optional: arg[:optional],
+          simple: arg[:simple],
+          type: arg[:type],
+          validator: arg[:validator]
       end
     end
 
@@ -77,8 +100,18 @@ class Plugin
   #
   # @param group [String] plugin group
   def self.plugin_group group
-    @pm = PluginManager.instance
-    @pm.add_to_group self, group: group
+    pm = PluginManager.instance
+    pm.add_to_group self, group: group
+
+    @plugin_groups ||= []
+    @plugin_groups << group
+  end
+
+  # returns list of plugin_groups associated
+  #
+  # @return [Array] returns list of plugin_groups associated
+  def self.plugin_groups
+    @plugin_groups
   end
 
   # add plugin argument to initialize
@@ -86,17 +119,25 @@ class Plugin
   # @param argument [String] argument name
   # @param default [Object] default value for argument, optional must be true
   # @param description [String] argument description
+  # @param group [Symbol] argument group
   # @param optional [Bool] argument is optional
-  # @param argument_settings [Hash] settings for argument
-  # @param type [Symbol] argument type
+  # @param simple [Bool] is simple argument
+  # @param type [Class] argument type
   # @param validator [Proc] validator
-  def self.plugin_argument argument, default: nil, description: nil, optional: false, argument_settings: {}, type: :initialize, validator: nil
-    argument_settings[:description] = description unless description.nil? or argument_settings.has_key? :description
+  def self.plugin_argument argument,
+                              default: nil,
+                              description: nil,
+                              group: :initialize,
+                              optional: false,
+                              simple: nil,
+                              type: nil,
+                              validator: nil
 
-    result = add_command_line_parameter argument, type: type, argument_settings: argument_settings
-    result[:default]  = default
-    result[:optional] = optional
-    result[:validator] = validator
+    result = add_command_line_parameter argument, group: group, description: description, type: type
+    result[:default]      = default
+    result[:optional]     = optional
+    result[:simple]       = simple
+    result[:validator]    = validator
   end
 
   # set plugin setting, which are respected by PluginManager
@@ -123,23 +164,24 @@ class Plugin
   # add command line parameter
   #
   # @param argument [String] name of command line parameter
-  # @param type [Symbol] type of argument
-  # @param argument_settings [Hash] settings for argument
-  def self.add_command_line_parameter argument, type: :all, argument_settings: {}
+  # @param group [Symbol] group of argument
+  # @param description [String] description of argument
+  # @param type [Class] type of argument
+  def self.add_command_line_parameter argument, group: :all, description: nil, type: nil
     @arguments ||= []
-    argument = {name: argument, type: type, settings: argument_settings}
+    argument = {name: argument, group: group, description: description, type: type}
     @arguments << argument
     argument
   end
 
   # return list of arguments
   #
-  # @param types [Array] types to return
+  # @param groups [Array] groups to return
   # @return [Array] arguments
-  def self.arguments types: nil
+  def self.arguments groups: nil
     result = []
     @arguments and @arguments.each do |argument|
-      if types.nil? or types.include? :all or types.include? argument[:type]
+      if groups.nil? or groups.include? :all or groups.include? argument[:group]
         result << argument
       end
     end
@@ -150,7 +192,7 @@ class Plugin
   def self.arguments_required?
     result = false
     @arguments and @arguments.each do |argument|
-      if argument[:type] == :initialize and argument[:optional] == false
+      if argument[:group] == :initialize and argument[:optional] == false
         result = true
         break
       end
@@ -163,11 +205,12 @@ class Plugin
   # check, if argument key exist and value is valid
   #
   # @param options [Hash] map with options
-  # @param argument [Hash] argument settings
+  # @param name [String,Symbol] name of argument
+  # @param validator [Proc] value validator
   # @return if argument key exist and value is valid
-  def is_argument_valid? options, argument
-    result = options.has_key? argument[:name]
-    result = (result and argument[:validator].yield(options[argument[:name]])) unless argument[:validator].nil?
+  def is_argument_valid? options, name, validator
+    result = options.has_key? name
+    result = (result and validator.yield(options[name])) unless validator.nil?
     result
   end
 end

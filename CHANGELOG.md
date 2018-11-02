@@ -1,3 +1,13 @@
+0.2.0 (2018-11-02)
+==================
+
+- introduce Plugin.initialize\_argument to allow interception of argument
+  initialization
+- breaking changes:
+    Plugin.plugin_argument: renamed parameter type into group
+    Plugin.arguments: renamed parameter types into groups
+    PluginManager.extend_option_parser: renamed parameter types into argument_groups
+
 0.1.9 (2018-10-30)
 ==================
 

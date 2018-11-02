@@ -33,7 +33,7 @@ describe PluginManager do
         plugin_group 'mytestgroup'
         plugin_group 'mytestgroup2'
 
-        add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+        add_command_line_parameter :name, type: String, description: 'description for name parameter'
 
         def after_initialize
           puts 'after_initialize'
@@ -62,6 +62,10 @@ describe PluginManager do
       expect(groups).to include(TestPlugin.to_s)
     end
 
+    it 'has groups listed in class' do
+      expect(@pm['TestPlugin'].plugin_groups).to eq(['mytestgroup', 'mytestgroup2'])
+    end
+
     it 'should be listed in second PluginManager group' do
       groups = @pm.each(group: 'mytestgroup2') {|x| x}
 
@@ -81,7 +85,7 @@ describe PluginManager do
     end
 
     it 'should run method after_initialize' do
-      expect{@pm['TestPlugin'].new}.to output("after_initialize\n").to_stdout
+      expect{@pm['TestPlugin'].new({name: 'test'})}.to output("after_initialize\n").to_stdout
     end
   end
 
@@ -92,7 +96,7 @@ describe PluginManager do
 
         plugin_group 'mytestgroup'
 
-        add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+        add_command_line_parameter :name, type: String, description: 'description for name parameter'
       end
 
       @options = OptionParser.new
@@ -112,13 +116,13 @@ describe PluginManager do
         plugin_group 'mytestgroup'
 
         plugin_argument :argument1
-        plugin_argument :argument2, description: 'bla', argument_settings: {type: String, description: 'description for argument2 parameter'}
+        plugin_argument :argument2, type: String, description: 'description for argument2 parameter'
         plugin_argument :argument3, optional: true
-        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', argument_settings: {type: TrueClass}
+        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', type: TrueClass
         plugin_argument :argument5, optional: true, default: '123'
-        plugin_argument :argument6, optional: true, argument_settings: {type: Array}
+        plugin_argument :argument6, optional: true, type: Array
 
-        add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+        add_command_line_parameter :name, type: String, description: 'description for name parameter'
       end
 
       @options = OptionParser.new
@@ -150,23 +154,22 @@ describe PluginManager do
     end
 
     it 'should require argument1 and argument2' do
-      expect {@pm['PluginWithArguments'].new argument1: 'abc'}.to raise_error(ArgumentError, 'missing keywords: argument2')
+      expect {@pm['PluginWithArguments'].new argument1: 'abc', name: 'test'}.to raise_error(ArgumentError, 'missing keywords: argument2')
     end
 
     it 'should set instance variables for required arguments' do
-      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz'
+      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz', name: 'test'
       expect(plugin.argument1).to eq('abc')
       expect(plugin.argument2).to eq('xyz')
     end
 
     it 'should set instance variables for optional arguments' do
-      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz'
+      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz', name: 'test'
       expect(plugin.argument3).to eq(nil)
     end
 
     it 'should set instance variables for optional argument with default values' do
-      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz'
-      expect(plugin.argument4).to eq(true)
+      plugin = @pm['PluginWithArguments'].new argument1: 'abc', argument2: 'xyz', name: 'test'
       expect(plugin.argument5).to eq('123')
     end
   end
@@ -179,19 +182,19 @@ describe PluginManager do
         plugin_group 'mytestgroup'
 
         plugin_argument :argument1
-        plugin_argument :argument2, description: 'bla', argument_settings: {type: String, description: 'description for argument2 parameter'}
-        plugin_argument :argument3, type: :command_line, optional: true
-        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', argument_settings: {type: TrueClass}
-        plugin_argument :argument5, type: :command_line2, optional: true, default: '123'
+        plugin_argument :argument2, type: String, description: 'description for argument2 parameter'
+        plugin_argument :argument3, group: :command_line, optional: true
+        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', type: TrueClass
+        plugin_argument :argument5, group: :command_line2, optional: true, default: '123'
 
-        add_command_line_parameter :name, argument_settings: {type: String, description: 'description for name parameter'}
+        add_command_line_parameter :name, type: String, description: 'description for name parameter'
       end
 
       @options = OptionParser.new
     end
 
     it 'should extend OptionParser' do
-      @pm.extend_option_parser @options, types: [:command_line, :command_line2]
+      @pm.extend_option_parser @options, argument_groups: [:command_line, :command_line2]
       expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-name STRING/)
       expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-argument1 STRING/)
       expect(@options.summarize).not_to include(/--PluginWithExcludedArguments-argument2 STRING/)
@@ -203,9 +206,9 @@ describe PluginManager do
     end
 
     it 'shows default values' do
-      expect(@options.summarize.index{|x| x =~ /--PluginWithExcludedArguments-argument5/}).to be(2)
+      expect(@options.summarize.index{|x| x =~ /--PluginWithExcludedArguments-argument5/}).to be(1)
       expect(@options.summarize).to include(/default: 123/)
-      expect(@options.summarize.index{|x| x =~ /default: 123/}).to be(4)
+      expect(@options.summarize.index{|x| x =~ /default: 123/}).to be(2)
     end
   end
 
@@ -304,6 +307,53 @@ describe PluginManager do
       expect(plugin).not_to be(nil)
       expect(plugin.argument1).to eq("abc")
       expect(plugin.argument2).to be(2)
+    end
+  end
+
+  describe 'PluginArgumentInitialize' do
+    before(:all) do
+      class PluginArgumentInitialize < Plugin
+        attr_reader :argument1, :argument2, :argument3, :argument4, :argument5, :command_line_arguments
+
+        plugin_group 'mytestgroup'
+
+        plugin_argument :argument1
+        plugin_argument :argument2, type: String, description: 'description for argument2 parameter'
+        plugin_argument :argument3, group: :command_line, optional: true
+        plugin_argument :argument4, optional: true, default: true, description: 'description for argument4 parameter', type: TrueClass
+        plugin_argument :argument5, group: :command_line2, optional: true, default: '123'
+
+        add_command_line_parameter :name, type: String, description: 'description for name parameter'
+
+        def initialize_argument argument, options, options_empty: true, options_unsupported: true
+          super
+
+          @command_line_arguments ||= []
+          case argument[:group]
+          when :command_line
+            if not is_argument_valid?(argument, :value, argument[:validator])
+              if not argument[:optional]
+                raise ArgumentError.new
+              end
+            else
+              if argument[:settings] and argument[:settings][:simple]
+                @command_line_arguments += [ '--'+argument[:name].to_s ]
+              else
+                @command_line_arguments += [ '--'+argument[:name].to_s, argument[:value]]
+              end
+            end
+          end
+        end
+      end
+
+      @options = OptionParser.new
+      @pm.extend_option_parser @options
+      @options.parse(['--PluginArgumentInitialize-argument3', 'test'])
+    end
+
+    it 'should extend OptionParser' do
+      plugin=@pm['PluginArgumentInitialize'].new name: "test", argument1: "abc", argument2: 2
+      expect(plugin.command_line_arguments).to eq(['--argument3', 'test'])
     end
   end
 end
